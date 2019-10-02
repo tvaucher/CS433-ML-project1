@@ -1,0 +1,19 @@
+# Module containing all implementations of ML techniques required for the project
+
+def least_squares_GD(y, tx, initial_w, max_iters, gamma):
+    ...
+
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+    ...
+
+def least_squares(y, tx):
+    ...
+
+def ridge_regression(y, tx, lambda_):
+    ...
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+    ...
+
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+    ...
