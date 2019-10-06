@@ -46,3 +46,44 @@ def create_csv_submission(ids, y_pred, name):
         writer.writeheader()
         for r1, r2 in zip(ids, y_pred):
             writer.writerow({'Id':int(r1),'Prediction':int(r2)})
+
+
+def z_normalize_data(x):
+    """
+    Helper function which performs Z-normalization on the columns of the data matrix given as an argument
+    Assumes all the column features follow a Gaussian distribution
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+
+    :returns: numpy ndarray matrix with shape (N, D) with Z-normalized columns
+    """
+
+    mean_x, std_x = np.mean(x, axis=0), np.std(x, axis=0)
+    x_norm = (x - mean_x) / std_x
+    return x_norm
+
+
+def min_max_normalize_data(x, new_min=0, new_max=1):
+    """
+    Helper function which performs min-max-normalization on the columns of the data matrix given as an argument.
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param new_min: lower boundary of the new interval, float, optional, the default value is 0
+    :param new_max: upper boundary of the new interval, float, optional, the default value is 1
+
+    :returns: numpy ndarray matrix with shape (N, D) with min-max-normalized columns
+    """
+
+    # Calculate minimum and maximum value for each column/feature
+    min_x, max_x = np.min(x, axis=0), np.max(x, axis=0)
+
+    # Generate row vectors with the new minimum and maximum values
+    new_min_x = new_min * np.ones(min_x.shape, dtype="float")
+    new_max_x = new_max * np.ones(max_x.shape, dtype="float")
+
+    # Apply a transformation, such that the values in every column with be in the interval [new_min, new_max]
+    x_norm = new_min_x + ((new_max_x - new_min_x) * (x - min_x) / (max_x - min_x))
+
+    return x_norm
