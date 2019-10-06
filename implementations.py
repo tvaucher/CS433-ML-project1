@@ -36,8 +36,6 @@ def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
 
     return w, loss
 
-def ridge_regression(y, tx, lambda_):
-    ...
 
 def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False):
     """
@@ -112,8 +110,43 @@ def least_squares(y, x):
 
         print("The Gram matrix is singular and as such the solution cannot be found!")
         return None
+
+
+def ridge_regression(y, x, lambda_):
+    """
+    Calculate the least squares solution with L2 regularization explicitly using the normal equations
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param y: vector of target values, numpy array with dimensions (N, 1)
+    :param lambda_: regularization coefficient, positive float value
+
+    :returns: (weights, loss value), tuple
+    """
+
+    # Compute the Gram matrix
+    x_t = np.transpose(x)
+    gram_matrix = np.matmul(x_t, x)
+
+    # Update the Gram matrix using lambda_
+    d = gram_matrix.shape[0]
+    ridge_matrix = gram_matrix + lambda_ * np.identity(d)
+
+    # Calculate the inverse of the updated Gram matrix
+    ridge_matrix_inv = np.linalg.inv(ridge_matrix)
+
+    # Calculate the weights using the normal equations
+    w = np.matmul(ridge_matrix_inv, np.matmul(x_t, y))
+
+    # Compute the loss
+    loss = compute_loss(y, x, w)
+
+    return w, loss
+
+
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     ...
+
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     ...
