@@ -115,7 +115,7 @@ def compute_gradient_mse(y, x, w):
     """
     Helper function that computes the gradient of the MSE loss function
 
-    :param y: vector of target values, numpy array with dimensions (D, 1)
+    :param y: vector of target values, numpy array with dimensions (N, 1)
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
     :param w: vector of weights, numpy array with dimensions (D, 1)
