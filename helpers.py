@@ -89,6 +89,23 @@ def min_max_normalize_data(x, new_min=0, new_max=1):
     return x_norm
 
 
+def split_data_by_categorical_column(x, column_index):
+    """
+    Helper function to split the data into multiple smaller datasets based on the value of one categorical column
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param column_index: index of the categorical column, integer value from 0 to D - 1
+
+    :returns: list of reduced datasets, one dataset for each category
+    """
+
+    categories = np.sort(np.unique(x[:, column_index]))
+    category_indices = [np.where(x[:, column_index] == category)[0] for category in categories]
+    splits = [np.delete(x[indices, :], column_index, axis=1) for indices in category_indices]
+    return splits
+
+
 def compute_loss(y, x, w, mae=False):
     """
     Helper function that calculates MSE or MAE loss
