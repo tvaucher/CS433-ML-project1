@@ -210,6 +210,90 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 
+def sigmoid(x):
+    """
+    Helper function that calculates the sigmoid function for a single input or an array of inputs
+
+    :param x: input data, single float or one-dimensional numpy array
+
+    :returns: sigmoid value(s), single float or one-dimensional numpy array
+    """
+
+    return 1 / (1 + np.exp(-x))
+
+
+def map_target_classes_to_boolean(y):
+    """
+    Helper function that transforms the target classes {-1, 1} into the standard boolean {0, 1}
+
+    :param y: vector of target classes, numpy array with dimensions (N, 1)
+
+    :returns: vector of boolean classes, numpy array with dimensions (N, 1)
+    """
+
+    return (y == 1).astype(int)
+
+
+def compute_loss_nll(y, x, w, lambda_=0):
+    """
+    Helper function that calculates the negative log likelihood loss for logistic regression
+    Can also optionally include regularization
+
+    :param y: vector of target classes, numpy array with dimensions (N, 1)
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param w: vector of weights, numpy array with dimensions (D, 1)
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
+
+    :returns: negative log likelihood loss value, float
+    """
+
+    sgm = sigmoid(np.matmul(x, w))
+    log_pos, log_neg = np.log(sgm), np.log(1 - sgm)
+    loss = - np.matmul(np.transpose(y), log_pos) - np.matmul(np.transpose(1 - y), log_neg)
+    loss += lambda_ * np.matmul(np.transpose(w), w)
+    return loss
+
+
+def compute_gradient_nll(y, x, w, lambda_=0):
+    """
+    Helper function that calculates the gradient of the negative log likelihood loss function for logistic regression
+    Can also optionally include regularization
+
+    :param y: vector of target classes, numpy array with dimensions (N, 1)
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param w: vector of weights, numpy array with dimensions (D, 1)
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
+
+    :returns: vector of gradients of the weights, numpy array with dimensions (D, 1)
+    """
+
+    e = y - sigmoid(np.matmul(x, w))
+    grd = - np.matmul(np.transpose(x), e)
+    grd += 2 * lambda_ * w
+    return grd
+
+
+def compute_hessian_nll(y, x, w, lambda_=0):
+    """
+    Helper function that calculates the Hessian matrix of the negative log likelihood loss function for logistic regression
+    Can also optionally include regularization
+
+    :param y: vector of target classes, numpy array with dimensions (N, 1)
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param w: vector of weights, numpy array with dimensions (D, 1)
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
+
+    :returns: Hessian matrix, numpy ndarray with dimensions (D, D)
+    """
+
+    sgm = sigmoid(x.dot(w)).reshape(-1)
+    s = np.diag(sgm * (1 - sgm) + 2 * lambda_)
+    return np.matmul(np.matmul(np.transpose(x), s), x)
+
+
 def train_test_split_data(y, x, ratio, seed):
     """
     Helper function that splits data samples randomly into train and test sets by a given ratio
