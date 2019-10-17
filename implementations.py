@@ -1,7 +1,8 @@
 # Module containing all implementations of ML techniques required for the project
 
 import numpy as np
-from helpers import compute_gradient_mse, compute_subgradient_mae, compute_loss, batch_iter
+from helpers import compute_loss, compute_gradient_mse, compute_subgradient_mae, batch_iter, \
+    map_target_classes_to_boolean, compute_loss_nll, compute_gradient_nll, compute_hessian_nll
 
 
 def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
@@ -144,9 +145,70 @@ def ridge_regression(y, x, lambda_):
     return w, loss
 
 
-def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    ...
+def logistic_regression(y, x, initial_w, max_iters, gamma):
+    """
+    Implementation of the Newton optimization algorithm for logistic regression
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param y: vector of target values, numpy array with dimensions (N, 1)
+    :param initial_w: vector of initial weights, numpy array with dimensions (D, 1)
+    :param max_iters: how many iterations to run the algorithm, integer
+    :param gamma: learning rate, positive float value
+
+    :returns: (final weights, final loss value), tuple
+    """
+
+    # Map the {-1, 1} classes to {0, 1}
+    y = map_target_classes_to_boolean(y)
+
+    # Set the initial values for the weights
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        # Compute the gradient and Hessian of the loss function
+        grd = compute_gradient_nll(y, x, w)
+        hess = compute_hessian_nll(y, x, w)
+
+        # Update the weights using the gradient, Hessian and learning rate
+        w = w - gamma * np.matmul(np.linalg.inv(hess), grd)
+
+    # Compute the final loss value
+    loss = compute_loss_nll(y, x, w)
+
+    return w, loss
 
 
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    ...
+def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
+    """
+    Implementation of the Newton optimization algorithm for logistic regression with L2 regularization
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param y: vector of target values, numpy array with dimensions (N, 1)
+    :param lambda_: regularization coefficient, positive float value
+    :param initial_w: vector of initial weights, numpy array with dimensions (D, 1)
+    :param max_iters: how many iterations to run the algorithm, integer
+    :param gamma: learning rate, positive float value
+
+    :returns: (final weights, final loss value), tuple
+    """
+
+    # Map the {-1, 1} classes to {0, 1}
+    y = map_target_classes_to_boolean(y)
+
+    # Set the initial values for the weights
+    w = initial_w
+
+    for n_iter in range(max_iters):
+        # Compute the gradient and Hessian of the loss function
+        grd = compute_gradient_nll(y, x, w, lambda_)
+        hess = compute_hessian_nll(y, x, w, lambda_)
+
+        # Update the weights using the gradient, Hessian and learning rate
+        w = w - gamma * np.matmul(np.linalg.inv(hess), grd)
+
+    # Compute the final loss value
+    loss = compute_loss_nll(y, x, w, lambda_)
+
+    return w, loss
