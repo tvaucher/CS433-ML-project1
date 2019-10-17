@@ -106,6 +106,25 @@ def split_data_by_categorical_column(x, column_index):
     return splits
 
 
+def augment_features_polynomial_basis(x, degree=2):
+    """
+    Helper function that augments the data with polynomial degrees of features up to a maximum degree
+    A column of ones is also added for the constant term
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param degree: maximum polynomial degree, integer (minimum 2), optional, the default value is 2
+
+    :returns: Phi matrix of augmented polynomial basis features, numpy ndarray with shape (N, 1 + D * degree)
+    """
+
+    n = x.shape[0]
+    phi = np.hstack((np.ones((n, 1), dtype=float), x))
+    for deg in range(2, degree + 1):
+        phi = np.hstack((phi, x ** deg))
+    return phi
+
+
 def compute_loss(y, x, w, mae=False):
     """
     Helper function that calculates MSE or MAE loss
