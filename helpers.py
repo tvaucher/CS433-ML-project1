@@ -121,7 +121,7 @@ def augment_features_polynomial_basis(x, degree=2):
 
     n = x.shape[0]
     powers = [x ** deg for deg in range(1, degree + 1)]
-    phi = np.concatenate((np.ones((n, 1)), *powers), axis=1)  # np.concatenate(powers, axis=1)), axis=1)
+    phi = np.concatenate((np.ones((n, 1)), *powers), axis=1)
     return phi
 
 
@@ -305,7 +305,7 @@ def train_test_split_data(y, x, ratio, seed):
     :param seed: seeding value for the random generator, integer
 
     :returns: tuple (x_train, y_train, x_test, y_test),
-              containts samples and targets in train set, followed by samples and targets in test set
+              contains samples and targets in train set, followed by samples and targets in test set
     """
 
     # Set the seed
