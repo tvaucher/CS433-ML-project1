@@ -85,21 +85,26 @@ def min_max_normalize_data(x, new_min=0, new_max=1):
     return x_norm
 
 
-def split_data_by_categorical_column(x, column_index):
+def split_data_by_categorical_column(y, x, ids, column_index):
     """
     Helper function to split the data into multiple smaller datasets based on the value of one categorical column
 
+    :param y: vector of target classes, numpy array with dimensions (N, 1)
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
+    :param ids: vector of ids for the samples, numpy array with dimensions (N, 1)
     :param column_index: index of the categorical column, integer value from 0 to D - 1
 
-    :returns: list of reduced datasets, one dataset for each category
+    :returns: (y_splits, x_splits, ids_splits), tuple of lists of reduced sets of target classes, data and ids,
+                                                one set of classes, data and ids for each category
     """
 
     categories = np.sort(np.unique(x[:, column_index]))
     category_indices = [np.where(x[:, column_index] == category)[0] for category in categories]
-    splits = [np.delete(x[indices, :], column_index, axis=1) for indices in category_indices]
-    return splits
+    x_splits = [np.delete(x[indices, :], column_index, axis=1) for indices in category_indices]
+    y_splits = [y[indices] for indices in category_indices]
+    ids_splits = [ids[indices] for indices in category_indices]
+    return y_splits, x_splits, ids_splits
 
 
 def augment_features_polynomial_basis(x, degree=2):
