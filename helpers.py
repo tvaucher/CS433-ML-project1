@@ -107,6 +107,62 @@ def split_data_by_categorical_column(y, x, ids, column_index):
     return y_splits, x_splits, ids_splits
 
 
+def remove_na_columns(x):
+    """
+    Helper function that removes columns in the data which contain only NaN values
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+
+    :returns: cleaned data matrix
+    """
+
+    na_mask = np.isnan(x)
+    na_columns = np.all(na_mask, axis=0)
+    return x[:, ~na_columns]
+
+
+def remove_low_variance_features(x, percentile):
+    """
+    Helper function that removes features in the data which have the lowest variance (below a percentile value)
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param percentile: variance percentile, float value between 0 and 1
+
+    :returns: cleaned data matrix
+    """
+    variances = np.nanvar(x, axis=0)
+    variance_percentile = np.percentile(variances, percentile * 100)
+    low_variance_mask = variances <= variance_percentile
+    return x[:, ~low_variance_mask]
+
+
+def remove_correlated_features(x, min_abs_correlation):
+    """
+    Helper function that removes linearly correlated features in the data using Pearson's correlation coefficients
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param min_abs_correlation: threshold for the correlation coefficient in absolute value, float value between 0 and 1
+
+    :returns: cleaned data matrix
+    """
+
+    variances = np.nanvar(x, axis=0)
+    correlation_coefficients = np.ma.corrcoef(np.ma.masked_invalid(x), rowvar=False)
+    rows, cols = np.where(abs(correlation_coefficients) > min_abs_correlation)
+    columns_to_remove = []
+    for i, j in zip(rows, cols):
+        if i >= j:
+            continue
+        if variances[i] < variances[j] and i not in columns_to_remove:
+            columns_to_remove.append(i)
+        elif variances[j] < variances[i] and j not in columns_to_remove:
+            columns_to_remove.append(j)
+    return np.delete(x, columns_to_remove, axis=1)
+
+
 def augment_features_polynomial_basis(x, degree=2):
     """
     Helper function that augments the data with polynomial degrees of features up to a maximum degree
