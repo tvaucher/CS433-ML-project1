@@ -114,15 +114,14 @@ def augment_features_polynomial_basis(x, degree=2):
 
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
-    :param degree: maximum polynomial degree, integer (minimum 2), optional, the default value is 2
+    :param degree: maximum polynomial degree, integer (minimum 1), optional, the default value is 2
 
     :returns: Phi matrix of augmented polynomial basis features, numpy ndarray with shape (N, 1 + D * degree)
     """
 
     n = x.shape[0]
-    phi = np.hstack((np.ones((n, 1), dtype=float), x))
-    for deg in range(2, degree + 1):
-        phi = np.hstack((phi, x ** deg))
+    powers = [x ** deg for deg in range(1, degree + 1)]
+    phi = np.concatenate((np.ones((n, 1)), *powers), axis=1)  # np.concatenate(powers, axis=1)), axis=1)
     return phi
 
 
