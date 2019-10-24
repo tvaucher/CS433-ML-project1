@@ -1,8 +1,13 @@
 # Module containing all implementations of ML techniques required for the project
 
 import numpy as np
-from helpers import compute_loss, compute_gradient_mse, compute_subgradient_mae, batch_iter, \
-    map_target_classes_to_boolean, compute_loss_nll, compute_gradient_nll, compute_hessian_nll
+
+from helpers import (batch_iter, compute_accuracy, compute_gradient_hinge,
+                     compute_gradient_mse, compute_gradient_nll,
+                     compute_hessian_nll, compute_loss, compute_loss_hinge,
+                     compute_loss_nll, compute_subgradient_mae,
+                     map_target_classes_to_boolean, predict_labels,
+                     predict_log_labels)
 
 
 def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
@@ -168,10 +173,10 @@ def logistic_regression(y, x, initial_w, max_iters, gamma):
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_nll(y, x, w)
-        hess = compute_hessian_nll(y, x, w)
+        # hess = compute_hessian_nll(y, x, w)
 
         # Update the weights using the gradient, Hessian and learning rate
-        w = w - gamma * np.matmul(np.linalg.inv(hess), grd)
+        w = w - gamma * grad  # np.matmul(np.linalg.inv(hess), grd)
 
     # Compute the final loss value
     loss = compute_loss_nll(y, x, w)
@@ -193,22 +198,45 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
 
     :returns: (final weights, final loss value), tuple
     """
-
     # Map the {-1, 1} classes to {0, 1}
     y = map_target_classes_to_boolean(y)
 
     # Set the initial values for the weights
     w = initial_w
+    print('initial loss', compute_loss_nll(y, x, w, lambda_))
 
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_nll(y, x, w, lambda_)
-        hess = compute_hessian_nll(y, x, w, lambda_)
+        # hess = compute_hessian_nll(y, x, w, lambda_)
 
         # Update the weights using the gradient, Hessian and learning rate
-        w = w - gamma * np.matmul(np.linalg.inv(hess), grd)
+        w -= gamma * grd
+        if n_iter % 500 == 0:
+            print(n_iter, compute_loss_nll(y, x, w, lambda_))
+            print(n_iter, f'Accuracy : {compute_accuracy(predict_log_labels(w, x), y):.4f}')
 
     # Compute the final loss value
     loss = compute_loss_nll(y, x, w, lambda_)
+
+    return w, loss
+
+
+def svm(y, x, lambda_, initial_w, max_iters, gamma):
+    w = initial_w
+    print('initial loss', compute_loss_hinge(y, x, w, lambda_))
+    for n_iter in range(max_iters):
+        # Compute the gradient and Hessian of the loss function
+        grd = compute_gradient_hinge(y, x, w, lambda_)
+
+        # Update the weights using the gradient, Hessian and learning rate
+        w -= gamma * grd
+        if n_iter % 100 == 0:
+            print(n_iter, compute_loss_hinge(y, x, w, lambda_))
+            print(
+                n_iter, f'Accuracy : {compute_accuracy(predict_labels(w, x), y):.4f}')
+
+    # Compute the final loss value
+    loss = compute_loss_hinge(y, x, w, lambda_)
 
     return w, loss
