@@ -129,21 +129,10 @@ def ridge_regression(y, x, lambda_):
 
     :returns: (weights, loss value), tuple
     """
-
-    # Compute the Gram matrix
-    x_t = np.transpose(x)
-    gram_matrix = np.matmul(x_t, x)
-
-    # Update the Gram matrix using lambda_
-    d = gram_matrix.shape[0]
-    ridge_matrix = gram_matrix + lambda_ * np.identity(d)
-
-    # Calculate the inverse of the updated Gram matrix
-    ridge_matrix_inv = np.linalg.inv(ridge_matrix)
-
-    # Calculate the weights using the normal equations
-    w = np.matmul(ridge_matrix_inv, np.matmul(x_t, y))
-
+    
+    gram = x.T @ x
+    gram += 2 * x.shape[0] * lambda_ * np.identity(gram.shape[0])
+    w = np.linalg.solve(gram, x.T @ y)
     # Compute the loss
     loss = compute_loss(y, x, w)
 
