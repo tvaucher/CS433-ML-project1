@@ -87,35 +87,17 @@ def least_squares(y, x):
               where N is the number of samples and D is the number of features
     :param y: vector of target values, numpy array with dimensions (N, 1)
 
-    :raises AssertionError: if the Gram matrix has no inverse
+    :raises LinAlgError: if the Gram matrix has no inverse
 
     :returns: (weights, loss value), tuple
     """
 
     # Compute the Gram matrix
-    x_t = np.transpose(x)
-    gram_matrix = np.matmul(x_t, x)
-
-    try:
-
-        # A matrix has no inverse if the determinant is 0
-        assert np.linalg.det(gram_matrix) != 0
-
-        # Find the inverse of the Gram matrix
-        gram_matrix_inv = np.linalg.inv(gram_matrix)
-
-        # Use the normal equations to get the weights
-        w = np.matmul(gram_matrix_inv, np.matmul(x_t, y))
-
-        # Compute the loss
-        loss = compute_loss(y, x, w)
-
-        return w, loss
-
-    except AssertionError:
-
-        print("The Gram matrix is singular and as such the solution cannot be found!")
-        return None
+    gram = x.T @ x
+    w = np.linalg.solve(gram, x.T @ y)
+    # Compute the loss
+    loss = compute_loss(y, x, w)
+    return w, loss
 
 
 def ridge_regression(y, x, lambda_):
