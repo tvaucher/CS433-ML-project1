@@ -158,7 +158,7 @@ def remove_correlated_features(x, min_abs_correlation):
             continue
         if variances[i] < variances[j] and i not in columns_to_remove:
             columns_to_remove.append(i)
-        elif variances[j] < variances[i] and j not in columns_to_remove:
+        elif variances[j] <= variances[i] and j not in columns_to_remove:
             columns_to_remove.append(j)
     return np.delete(x, columns_to_remove, axis=1)
 
