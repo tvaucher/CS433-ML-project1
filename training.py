@@ -34,7 +34,7 @@ PRI_JET_NUM_INDEX = 22
 SEED = 2019
 POSSIBLE_LAMBDA_VALUES = np.logspace(-5, -2, 5)
 POSSIBLE_DEGREES = np.arange(1, 8)
-ALGORITHMS = ("RIDGE", "LOGISTIC", "SVM")
+ALGORITHMS = ("ridge", "logistic", "svm")
 
 if __name__ == "__main__":
 
@@ -49,56 +49,69 @@ if __name__ == "__main__":
                                          train_ids,
                                          PRI_JET_NUM_INDEX)
 
-    # Initialize a grid for cross-validation of ridge regression,
-    # to record mean and std of train and validation error for each parameter combination
-    grid_shape = (4, len(POSSIBLE_DEGREES), len(POSSIBLE_LAMBDA_VALUES), 2)
-    train_loss_matrix = np.zeros(grid_shape)
-    validation_loss_matrix = np.zeros(grid_shape)
+    for alg in ALGORITHMS:
+        print("Using algorithm:", alg)
+        # Initialize a grid for cross-validation of each algorithm,
+        # to record mean and std of train and validation error for each parameter combination
+        grid_shape = (4, len(POSSIBLE_DEGREES), len(POSSIBLE_LAMBDA_VALUES), 2)
+        train_loss_matrix = np.zeros(grid_shape)
+        validation_loss_matrix = np.zeros(grid_shape)
 
-    # Perform cross-validation on each of the 4 subsets,
-    # to find the optimal values for the lambda and polynomial degree parameters
-    # The train data is first preprocessed then split into 10 cross-folds
-    for jet_num, (train_classes_split, train_data_split) in \
-            enumerate(zip(train_classes_jet_num_splits, train_data_jet_num_splits)):
-        for i, deg in enumerate(POSSIBLE_DEGREES):
-            train_data_split = preprocessing(train_data_split, degree=deg)
-            train_set_folds = k_fold_cross_split_data(train_classes_split, train_data_split, 10, SEED)
-            for j, lambda_ in enumerate(POSSIBLE_LAMBDA_VALUES):
-                print("PRI_JET_NUM: {0}; Degree: {1}; Lambda: {2:.5f}".format(jet_num, deg, lambda_))
-                folds_train_losses = []
-                folds_validation_losses = []
-                for x_train, y_train, x_test, y_test in train_set_folds:
-                    w, train_loss = ridge_regression(y_train, x_train, lambda_)
-                    folds_train_losses.append(train_loss)
-                    validation_loss = compute_loss(y_test, x_test, w)
-                    folds_validation_losses.append(validation_loss)
-                train_loss_matrix[jet_num, i, j] = \
-                    (np.mean(folds_train_losses), np.std(folds_train_losses))
-                validation_loss_matrix[jet_num, i, j] = \
-                    (np.mean(folds_validation_losses), np.std(folds_validation_losses))
+        # Perform cross-validation on each of the 4 subsets,
+        # to find the optimal values for the lambda and polynomial degree parameters
+        # The train data is first preprocessed then split into 10 cross-folds
+        for jet_num, (train_classes_split, train_data_split) in \
+                enumerate(zip(train_classes_jet_num_splits, train_data_jet_num_splits)):
+            for i, deg in enumerate(POSSIBLE_DEGREES):
+                train_data_split = preprocessing_pipeline(train_data_split, degree=deg)
+                train_set_folds = k_fold_cross_split_data(train_classes_split, train_data_split, 10, SEED)
+                for j, lambda_ in enumerate(POSSIBLE_LAMBDA_VALUES):
+                    print("PRI_JET_NUM: {0}; Degree: {1}; Lambda: {2:.5f}".format(jet_num, deg, lambda_))
+                    folds_train_losses = []
+                    folds_validation_losses = []
+                    for x_train, y_train, x_test, y_test in train_set_folds:
+                        if alg == "ridge":
+                            w, train_loss = ridge_regression(y_train, x_train, lambda_)
+                            validation_loss = compute_loss(y_test, x_test, w)
+                        elif alg == "logistic":
+                            initial_w = np.zeros((x_train.shape[1], 1))
+                            w, train_loss = reg_logistic_regression(y_train.reshape((-1, 1)), x_train, lambda_, initial_w, 1000, 0.1)
+                            validation_loss = compute_loss_nll(y_test, x_test, w)
+                        else:
+                            initial_w = np.zeros(x_train.shape[1])
+                            w, train_loss = svm(y_train, x_train, lambda_, initial_w, 1000, 1e-5)
+                            validation_loss = compute_loss_hinge(y_test, x_test, w)
+                        folds_train_losses.append(train_loss)
+                        folds_validation_losses.append(validation_loss)
+                    train_loss_matrix[jet_num, i, j] = \
+                        (np.mean(folds_train_losses), np.std(folds_train_losses))
+                    validation_loss_matrix[jet_num, i, j] = \
+                        (np.mean(folds_validation_losses), np.std(folds_validation_losses))
 
-    # Find the best parameter combination for ridge regression for each of the 4 subsets
-    # The best combination is the one with minimum mean validation loss
-    ridge_best_params = \
-        [find_best_hyperparameters(validation_loss_matrix[jet_num, :, :, 0], POSSIBLE_LAMBDA_VALUES, POSSIBLE_DEGREES)
-         for jet_num in range(4)]
-    np.save("ridge_best_params", ridge_best_params)
+        # Find the best parameter combination for each algorithm for each of the 4 subsets
+        # The best combination is the one with minimum mean validation loss
+        alg_best_params = \
+            [find_best_hyperparameters(validation_loss_matrix[jet_num, :, :, 0].T, POSSIBLE_LAMBDA_VALUES, POSSIBLE_DEGREES)
+             for jet_num in range(4)]
+        np.save(alg + "_best_params", alg_best_params)
 
-    # Train the weights for the 4 subsets using the best parameters, end result is 4 different models
-    ridge_models = []
-    for (lambda_, deg), train_classes_split, train_data_split in zip(ridge_best_params, train_classes_jet_num_splits,
-                                                                     train_data_jet_num_splits):
-        train_data_split = preprocessing(train_data_split, degree=deg)
-        initial_w = np.zeros((train_data_split.shape[1],))
-        w, loss = ridge_regression(train_classes_split, train_data_split, lambda_)
+        # Train the weights for the 4 subsets using the best parameters, end result is 4 different models
+        alg_models = []
+        for (lambda_, deg), train_classes_split, train_data_split in zip(alg_best_params,
+                                                                         train_classes_jet_num_splits,
+                                                                         train_data_jet_num_splits):
+            train_data_split = preprocessing_pipeline(train_data_split, degree=deg)
+            initial_w = np.zeros((train_data_split.shape[1],))
+            if alg == "ridge":
+                w, loss = ridge_regression(train_classes_split, train_data_split, lambda_)
+            elif alg == "logistic":
+                initial_w = np.zeros((train_data_split.shape[1], 1))
+                w, loss = reg_logistic_regression(train_classes_split.reshape((-1, 1)), train_data_split, lambda_, initial_w, 1000, 0.1)
+            else:
+                initial_w = np.zeros((train_data_split.shape[1], 1))
+                w, loss = svm(train_classes_split.reshape((-1, 1)), train_data_split, lambda_, initial_w, 1000, 1e-5)
 
-        print(
-            f'Loss: {loss:.3f}; Accuracy : {compute_accuracy(predict_labels(w, train_data_split), train_classes_split)}')
-        # w, loss = reg_logistic_regression(train_classes_split, data_split, 1e-3, initial_w, 1001, 1e-5)
-        # w, loss = svm(train_classes_split, data_split, 1e-3, initial_w, 1001, 1e-5)#5e-8)
-        ridge_models.append((w, loss))
+            alg_models.append((w, loss))
 
-    # Save the trained models for ridge regression in a local binary file
-    np.save("ridge_models", ridge_models)
-
-    print(np.load("ridge_models.npy"))
+        # Save the trained models for each algorithm in a local binary file
+        np.save(alg + "_models", alg_models)
