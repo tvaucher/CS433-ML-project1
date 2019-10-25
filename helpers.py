@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""some helper functions for project 1."""
+"""Module that contains various helper functions for the project"""
 import csv
 import numpy as np
 
@@ -201,9 +201,35 @@ def compute_hessian_nll(y, x, w, lambda_=0):
     return np.matmul(np.matmul(np.transpose(x), s), x)
 
 def compute_loss_hinge(y, x, w, lambda_=0):
+    """
+    Helper function that calculates the Hinge loss for linear SVM classification
+    Can also optionally include regularization
+
+    :param y: vector of target classes, numpy array with length N
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param w: vector of weights, numpy array with length D
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
+
+    :returns: Hinge loss value, float
+    """
+
     return np.maximum(1 - y * (x @ w), 0).sum() + lambda_ / 2 * w.dot(w)
-    
+
+
 def compute_gradient_hinge(y, x, w, lambda_=0):
+    """
+    Helper function that calculates the gradient of the Hinge loss function for linear SVM classification
+    Can also optionally include regularization
+
+    :param y: vector of target classes, numpy array with length N
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param w: vector of weights, numpy array with length D
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
+
+    :returns: vector of gradients of the weights, numpy array with length D
+    """
     mask = (y * (x @ w)) < 1
     grad = np.zeros_like(w)
     grad -= (y[:, None] * x)[mask, :].sum(axis=0)

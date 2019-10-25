@@ -1,4 +1,4 @@
-# Module containing all implementations of ML techniques required for the project
+"""Module containing all implementations of ML techniques required for the project"""
 
 import numpy as np
 
@@ -93,9 +93,13 @@ def least_squares(y, x):
 
     # Compute the Gram matrix
     gram = x.T @ x
+
+    # Use the normal equations to find the best weights
     w = np.linalg.solve(gram, x.T @ y)
+
     # Compute the loss
     loss = compute_loss(y, x, w)
+
     return w, loss
 
 
@@ -110,10 +114,14 @@ def ridge_regression(y, x, lambda_):
 
     :returns: (weights, loss value), tuple
     """
-    
+
+    # Compute the Gram matrix and update it with the regularization term
     gram = x.T @ x
     gram += 2 * x.shape[0] * lambda_ * np.identity(gram.shape[0])
+
+    # Use the normal equations to find the best weights
     w = np.linalg.solve(gram, x.T @ y)
+
     # Compute the loss
     loss = compute_loss(y, x, w)
 
@@ -189,6 +197,22 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
 
 
 def svm(y, x, lambda_, initial_w, max_iters, gamma):
+    """
+    Implementation of the linear SVM classification algorithm with L2 regularization
+    The SVM is simulated through optimization of the Hinge loss function with gradient descent
+
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param y: vector of target values, numpy array with length N
+    :param lambda_: regularization coefficient, positive float value
+    :param initial_w: vector of initial weights, numpy array with length D
+    :param max_iters: how many iterations to run the algorithm, integer
+    :param gamma: learning rate, positive float value
+
+    :returns: (final weights, final loss value), tuple
+    """
+
+    # Set the initial values for the weights
     w = initial_w
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function

@@ -1,5 +1,7 @@
-import csv
+"""Module containing functions for preprocessing the data"""
+
 import numpy as np
+
 
 def load_csv_data(data_path, sub_sample=False):
     """Loads data and returns y (class labels), tX (features) and ids (event ids)"""
@@ -19,6 +21,7 @@ def load_csv_data(data_path, sub_sample=False):
         ids = ids[::50]
 
     return yb, input_data, ids
+
 
 def z_normalize_data(x):
     """
