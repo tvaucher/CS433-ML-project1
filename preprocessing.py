@@ -1,5 +1,7 @@
-import csv
+"""Module containing functions for preprocessing the data"""
+
 import numpy as np
+
 
 def load_csv_data(data_path, sub_sample=False):
     """Loads data and returns y (class labels), tX (features) and ids (event ids)"""
@@ -19,6 +21,7 @@ def load_csv_data(data_path, sub_sample=False):
         ids = ids[::50]
 
     return yb, input_data, ids
+
 
 def z_normalize_data(x):
     """
@@ -152,3 +155,27 @@ def augment_features_polynomial_basis(x, degree=2):
     powers = [x ** deg for deg in range(1, degree + 1)]
     phi = np.concatenate((np.ones((n, 1)), *powers), axis=1)
     return phi
+
+
+def preprocessing_pipeline(data, *, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85, degree=3):
+    """
+    Function that performs the whole preprocessing pipeline
+
+    :param data: data matrix, numpy ndarray with shape with shape (N, D),
+                 where N is the number of samples and D is the number of features
+    :param nan_value: integer of float value in the data that is to be regarded as numpy.NaN
+    :param low_var_threshold: variance percentile, float value between 0 and 1
+    :param corr_threshold: threshold for the correlation coefficient in absolute value, float value between 0 and 1
+    :param degree: maximum polynomial degree, integer (minimum 1)
+
+    :returns: preprocessed data matrix
+    """
+    data = data.copy()
+    data[data == nan_value] = np.nan
+    data = remove_na_columns(data)
+    data = remove_low_variance_features(data, low_var_threshold)
+    data = remove_correlated_features(data, corr_threshold)
+    data = z_normalize_data(data)
+    data[np.isnan(data)] = 0.
+    data = augment_features_polynomial_basis(data, degree)
+    return data

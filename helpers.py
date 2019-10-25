@@ -1,39 +1,7 @@
 # -*- coding: utf-8 -*-
-"""some helper functions for project 1."""
+"""Module that contains various helper functions for the project"""
 import csv
 import numpy as np
-
-
-def train_test_split_data(y, x, ratio, seed):
-    """
-    Helper function that splits data samples randomly into train and test sets by a given ratio
-
-    :param y: vector of target values, numpy array with dimensions (N, 1)
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-    :param ratio: fraction of data samples that will be selected for trainings, float value between 0 and 1
-    :param seed: seeding value for the random generator, integer
-
-    :returns: tuple (x_train, y_train, x_test, y_test),
-              contains samples and targets in train set, followed by samples and targets in test set
-    """
-
-    # Set the seed
-    np.random.seed(seed)
-
-    # Use the ratio to find the number of samples in the train set as an integer by rounding if necessary
-    n = x.shape[0]
-    num_train_samples = int(ratio * n)
-
-    # Shuffle and split the sample indices into train and test parts
-    indices = np.random.permutation(n)
-    train_indices = indices[:num_train_samples]
-    test_indices = indices[num_train_samples:]
-
-    # Generate the output sets
-    x_train, y_train = x[train_indices], y[train_indices]
-    x_test, y_test = x[test_indices], y[test_indices]
-    return x_train, y_train, x_test, y_test
 
 
 def predict_labels(weights, data):
@@ -41,20 +9,9 @@ def predict_labels(weights, data):
     y_pred = np.dot(data, weights)
     y_pred[np.where(y_pred <= 0)] = -1
     y_pred[np.where(y_pred > 0)] = 1
-    
+
     return y_pred
 
-def binarize(y):
-    y[y <= 0.5] = 0
-    y[y > 0.5] = 1
-
-def predict_log_labels(weights, data):
-    pred = sigmoid(data @ weights)
-    binarize(pred)
-    return pred
-
-def compute_accuracy(predict, targets):
-    return np.mean(predict == targets)
 
 def map_target_classes_to_boolean(y):
     """
@@ -244,9 +201,35 @@ def compute_hessian_nll(y, x, w, lambda_=0):
     return np.matmul(np.matmul(np.transpose(x), s), x)
 
 def compute_loss_hinge(y, x, w, lambda_=0):
+    """
+    Helper function that calculates the Hinge loss for linear SVM classification
+    Can also optionally include regularization
+
+    :param y: vector of target classes, numpy array with length N
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param w: vector of weights, numpy array with length D
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
+
+    :returns: Hinge loss value, float
+    """
+
     return np.maximum(1 - y * (x @ w), 0).sum() + lambda_ / 2 * w.dot(w)
-    
+
+
 def compute_gradient_hinge(y, x, w, lambda_=0):
+    """
+    Helper function that calculates the gradient of the Hinge loss function for linear SVM classification
+    Can also optionally include regularization
+
+    :param y: vector of target classes, numpy array with length N
+    :param x: data matrix, numpy ndarray with shape with shape (N, D),
+              where N is the number of samples and D is the number of features
+    :param w: vector of weights, numpy array with length D
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
+
+    :returns: vector of gradients of the weights, numpy array with length D
+    """
     mask = (y * (x @ w)) < 1
     grad = np.zeros_like(w)
     grad -= (y[:, None] * x)[mask, :].sum(axis=0)

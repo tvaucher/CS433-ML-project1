@@ -1,28 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from preprocessing import load_csv_data, remove_na_columns, remove_low_variance_features, \
-    remove_correlated_features, z_normalize_data, augment_features_polynomial_basis, split_data_by_categorical_column
+from preprocessing import load_csv_data, preprocessing_pipeline, split_data_by_categorical_column
 
-from helpers import compute_loss_nll, predict_labels, compute_accuracy, compute_loss, create_csv_submission
-
-from implementations import reg_logistic_regression, svm, ridge_regression
-
-
-def preprocessing(data, *, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85, degree=3):
-    data = data.copy()
-    data[data == nan_value] = np.nan
-    data = remove_na_columns(data)
-    data = remove_low_variance_features(data, low_var_threshold)
-    data = remove_correlated_features(data, corr_threshold)
-    data = z_normalize_data(data)
-    data[np.isnan(data)] = 0.
-    data = augment_features_polynomial_basis(data, degree)
-    return data
+from helpers import predict_labels, create_csv_submission
 
 
 PRI_JET_NUM_INDEX = 22
 SEED = 2019
+ALGORITHMS = ("ridge", "logistic", "svm")
 
 if __name__ == "__main__":
     # Load the test dataset using the provided helper function load_csv_data
@@ -35,21 +21,28 @@ if __name__ == "__main__":
                                          test_data,
                                          test_ids,
                                          PRI_JET_NUM_INDEX)
+    for alg in ALGORITHMS:
+        # Load previously computed optimal hyperparameters and weights for each algorithm
+        alg_best_params = np.load(alg + "_best_params.npy", allow_pickle=True)
+        alg_models = np.load(alg + "_models.npy", allow_pickle=True)
 
-    # Load previously computed optimal hyperparameters and weights for ridge regression
-    ridge_best_params = np.load("ridge_best_params.npy", allow_pickle=True)
-    ridge_models = np.load("ridge_models.npy", allow_pickle=True)
+        # Calculate the predictions for each of the 4 subsets using the weights and then combine them
+        alg_results = None
+        for (w, _), (_, deg), test_classes_split, test_data_split, test_ids_split in zip(alg_models, alg_best_params,
+                                                                                         test_classes_jet_num_splits,
+                                                                                         test_data_jet_num_splits,
+                                                                                         test_ids_jet_num_splits):
+            test_data_split = preprocessing_pipeline(test_data_split, degree=deg.astype(int))
+            if alg == "logistic":
+                # For logistic regression the predictions will be in the interval [0, 1] instead of [-1, 1],
+                # so 0.5 is used as the class border value instead of 0
+                pred = np.dot(test_data_split, w)
+                pred[np.where(pred <= 0.5)] = -1
+                pred[np.where(pred > 0.5)] = 1
+            else:
+                pred = predict_labels(w, test_data_split)
+            out = np.stack((test_ids_split, pred), axis=-1)
+            alg_results = out if alg_results is None else np.vstack((alg_results, out))
 
-    # Calculate the predictions for each of the 4 subsets using the ridge regression weights and then combine them
-    ridge_results = None
-    for (w, _), (_, deg), test_classes_split, test_data_split, test_ids_split in zip(ridge_models, ridge_best_params,
-                                                                                     test_classes_jet_num_splits,
-                                                                                     test_data_jet_num_splits,
-                                                                                     test_ids_jet_num_splits):
-        test_data_split = preprocessing(test_data_split, degree=deg)
-        pred = predict_labels(w, test_data_split)
-        out = np.stack((test_ids_split, pred), axis=-1)
-        ridge_results = out if ridge_results is None else np.vstack((ridge_results, out))
-
-    # Create the ridge regression submission
-    create_csv_submission(ridge_results[:, 0], ridge_results[:, 1], 'ridge_submission.csv')
+        # Create the submission for each algorithm
+        create_csv_submission(alg_results[:, 0], alg_results[:, 1], alg + '_submission.csv')
