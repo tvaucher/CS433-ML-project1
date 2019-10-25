@@ -214,12 +214,22 @@ def svm(y, x, lambda_, initial_w, max_iters, gamma):
 
     # Set the initial values for the weights
     w = initial_w
+
+    # Compute the initial loss value
+    prev_loss = compute_loss_hinge(y, x, w, lambda_)
+
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_hinge(y, x, w, lambda_)
 
         # Update the weights using the gradient, Hessian and learning rate
         w -= gamma * grd
+
+        # Compute the current loss and test convergence
+        loss = compute_loss_hinge(y, x, w, lambda_)
+        if abs(loss - prev_loss) < 1e-5:
+            break
+        prev_loss = loss
 
     # Compute the final loss value
     loss = compute_loss_hinge(y, x, w, lambda_)
