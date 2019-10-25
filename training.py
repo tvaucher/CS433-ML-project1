@@ -1,26 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from preprocessing import load_csv_data, remove_na_columns, remove_low_variance_features, \
-    remove_correlated_features, z_normalize_data, augment_features_polynomial_basis, split_data_by_categorical_column
+from preprocessing import load_csv_data, preprocessing_pipeline, split_data_by_categorical_column
 
 from cross_validation import k_fold_cross_split_data
 
-from helpers import compute_loss_nll, predict_labels, compute_accuracy, compute_loss
+from helpers import compute_loss, compute_loss_nll, compute_loss_hinge
 
 from implementations import reg_logistic_regression, svm, ridge_regression
-
-
-def preprocessing(data, *, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85, degree=3):
-    data = data.copy()
-    data[data == nan_value] = np.nan
-    data = remove_na_columns(data)
-    data = remove_low_variance_features(data, low_var_threshold)
-    data = remove_correlated_features(data, corr_threshold)
-    data = z_normalize_data(data)
-    data[np.isnan(data)] = 0.
-    data = augment_features_polynomial_basis(data, degree)
-    return data
 
 
 def find_best_hyperparameters(error_values, lambdas, degrees):
