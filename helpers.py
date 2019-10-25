@@ -9,20 +9,9 @@ def predict_labels(weights, data):
     y_pred = np.dot(data, weights)
     y_pred[np.where(y_pred <= 0)] = -1
     y_pred[np.where(y_pred > 0)] = 1
-    
+
     return y_pred
 
-def binarize(y):
-    y[y <= 0.5] = 0
-    y[y > 0.5] = 1
-
-def predict_log_labels(weights, data):
-    pred = sigmoid(data @ weights)
-    binarize(pred)
-    return pred
-
-def compute_accuracy(predict, targets):
-    return np.mean(predict == targets)
 
 def map_target_classes_to_boolean(y):
     """

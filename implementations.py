@@ -2,12 +2,11 @@
 
 import numpy as np
 
-from helpers import (batch_iter, compute_accuracy, compute_gradient_hinge,
+from helpers import (batch_iter, compute_gradient_hinge,
                      compute_gradient_mse, compute_gradient_nll,
                      compute_hessian_nll, compute_loss, compute_loss_hinge,
                      compute_loss_nll, compute_subgradient_mae,
-                     map_target_classes_to_boolean, predict_labels,
-                     predict_log_labels)
+                     map_target_classes_to_boolean)
 
 
 def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
@@ -174,7 +173,6 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
 
     # Set the initial values for the weights
     w = initial_w
-    print('initial loss', compute_loss_nll(y, x, w, lambda_))
 
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
@@ -183,9 +181,6 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
 
         # Update the weights using the gradient, Hessian and learning rate
         w -= gamma * grd
-        if n_iter % 500 == 0:
-            print(n_iter, compute_loss_nll(y, x, w, lambda_))
-            print(n_iter, f'Accuracy : {compute_accuracy(predict_log_labels(w, x), y):.4f}')
 
     # Compute the final loss value
     loss = compute_loss_nll(y, x, w, lambda_)
@@ -195,17 +190,12 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
 
 def svm(y, x, lambda_, initial_w, max_iters, gamma):
     w = initial_w
-    print('initial loss', compute_loss_hinge(y, x, w, lambda_))
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_hinge(y, x, w, lambda_)
 
         # Update the weights using the gradient, Hessian and learning rate
         w -= gamma * grd
-        if n_iter % 100 == 0:
-            print(n_iter, compute_loss_hinge(y, x, w, lambda_))
-            print(
-                n_iter, f'Accuracy : {compute_accuracy(predict_labels(w, x), y):.4f}')
 
     # Compute the final loss value
     loss = compute_loss_hinge(y, x, w, lambda_)
