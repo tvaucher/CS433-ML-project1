@@ -162,6 +162,8 @@ def logistic_regression(y, x, initial_w, max_iters, gamma, threshold=1e-2):
     :param threshold: convergence threshold, positive float value
 
     :returns: (final weights, final loss value), tuple
+    
+    :raises: LinAlgError if the Hessian matrix becomes singular
     """
 
     # Map the {-1, 1} classes to {0, 1}
@@ -176,10 +178,10 @@ def logistic_regression(y, x, initial_w, max_iters, gamma, threshold=1e-2):
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_nll(y, x, w)
-        # hess = compute_hessian_nll(y, x, w)
+        hess = compute_hessian_nll(y, x, w)
 
         # Update the weights using the gradient, Hessian and learning rate
-        w = w - gamma * grad  # np.matmul(np.linalg.inv(hess), grd)
+        w -= gamma * np.linalg.solve(hess, grd)
 
         # Compute the current loss and test convergence
         loss = compute_loss_nll(y, x, w)
@@ -222,10 +224,10 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma, threshol
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_nll(y, x, w, lambda_)
-        # hess = compute_hessian_nll(y, x, w, lambda_)
+        hess = compute_hessian_nll(y, x, w, lambda_)
 
         # Update the weights using the gradient, Hessian and learning rate
-        w -= gamma * grd
+        w -= gamma / np.sqrt(n_iter+1) * np.linalg.solve(hess, grd)
 
         # Compute the current loss and test convergence
         loss = compute_loss_nll(y, x, w, lambda_)
@@ -259,12 +261,13 @@ def svm(y, x, lambda_, initial_w, max_iters, gamma, threshold=1e-5):
 
     # Set the initial values for the weights
     w = initial_w
-
+    
     # Compute the initial loss value
     prev_loss = compute_loss_hinge(y, x, w, lambda_)
-
+    
     for n_iter in range(max_iters):
-        # Compute the gradient and Hessian of the loss function
+        #for y_n, x_n in batch_iter(y, x, batch_size=100, num_batches=10):
+        # Compute the gradient of the loss function
         grd = compute_gradient_hinge(y, x, w, lambda_)
 
         # Update the weights using the gradient, Hessian and learning rate
