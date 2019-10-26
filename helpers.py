@@ -63,12 +63,11 @@ def compute_loss(y, x, w, mae=False):
     :returns: loss value, float
     """
 
-    n = x.shape[0]
-    e = y - np.matmul(x, w)
+    e = y - x @ w
     if mae:
-        loss = np.sum(abs(e)) / n
+        loss = np.mean(np.abs(e))
     else:
-        loss = np.sum(e ** 2) / (2 * n)
+        loss = np.mean(e ** 2) / 2
     return loss
 
 
@@ -85,8 +84,8 @@ def compute_gradient_mse(y, x, w):
     """
 
     n = x.shape[0]
-    e = y - np.matmul(x, w)
-    grd = (-1 / n) * np.matmul(np.transpose(x), e)
+    e = y - x @ w
+    grd = -(x.T @ e) / n
     return grd
 
 
@@ -104,8 +103,8 @@ def compute_subgradient_mae(y, x, w):
     """
 
     n = x.shape[0]
-    e = y - np.matmul(x, w)
-    grd = (-1 / n) * np.matmul(np.transpose(x), np.sign(e))
+    e = y - x @ w
+    grd = -(x.T @ np.sign(e)) / n
     return grd
 
 
