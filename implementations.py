@@ -9,7 +9,7 @@ from helpers import (batch_iter, compute_gradient_hinge,
                      map_target_classes_to_boolean)
 
 
-def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
+def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False, threshold=1e-5):
     """
     Implementation of the Gradient Descent optimization algorithm for linear regression
     Can be run with both MSE and MAE loss
@@ -21,6 +21,7 @@ def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
     :param max_iters: how many iterations to run the algorithm, integer
     :param gamma: learning rate, positive float value
     :param mae: whether to use MAE loss, boolean, optional, the default value is False
+    :param threshold: convergence threshold, positive float value
 
     :returns: (final weights, final loss value), tuple
     """
@@ -37,11 +38,12 @@ def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
         grd = compute_subgradient_mae(y, x, w) if mae else compute_gradient_mse(y, x, w)
 
         # Update the weights using the gradient and learning rate
-        w = w - gamma * grd
+        w -= gamma * grd
 
         # Compute the current loss and test convergence
         loss = compute_loss(y, x, w, mae)
-        if abs(loss - prev_loss) < 1e-5:
+        if abs(loss - prev_loss) < threshold:
+            print(f'converged at iter : {n_iter}')
             break
         prev_loss = loss.copy()
 
@@ -51,7 +53,7 @@ def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
     return w, loss
 
 
-def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False):
+def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False, threshold=1e-5):
     """
     Implementation of the Stochastic Gradient Descent optimization algorithm for linear regression
     Can be run with both MSE and MAE loss
@@ -63,6 +65,7 @@ def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False):
     :param max_iters: how many iterations to run the algorithm, integer
     :param gamma: learning rate, positive float value
     :param mae: whether to use MAE loss, boolean, optional, the default value is False
+    :param threshold: convergence threshold, positive float value
 
     :returns: (final weights, final loss value), tuple
     """
@@ -75,19 +78,19 @@ def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False):
 
     # Use the helper function batch_iter from Exercise 2,
     # to get a random sample from the data in the form (y_n, x_n) for each iteration
-    batch_iterator = batch_iter(y, x, batch_size=1, num_batches=max_iters)
+    for n_iter in range(max_iters // 10):
+        for y_n, x_n in batch_iter(y, x, batch_size=100, num_batches=10):
+            # Compute the gradient for only one sample (or subgradient if MAE loss is used)
+            grd = compute_subgradient_mae(y_n, x_n, w) if mae else compute_gradient_mse(y_n, x_n, w)
 
-    for y_n, x_n in batch_iterator:
-        # Compute the gradient for only one sample (or subgradient if MAE loss is used)
-        grd = compute_subgradient_mae(y_n, x_n, w) if mae else compute_gradient_mse(y_n, x_n, w)
-
-        # Update the weights using the gradient and learning rate
-        w = w - gamma * grd
+            # Update the weights using the gradient and learning rate
+            w = w - gamma * grd
 
         # Compute the current loss and test convergence
-        loss = compute_loss(y, x, w, mae)
-        if abs(loss - prev_loss) < 1e-5:
-            break
+        loss = compute_loss(y, x, w, mae)     
+        if abs(loss - prev_loss) < threshold:
+            print(f'converged at iter : {n_iter}')
+            break   
         prev_loss = loss.copy()
 
     # Compute the final loss value
@@ -146,7 +149,7 @@ def ridge_regression(y, x, lambda_):
     return w, loss
 
 
-def logistic_regression(y, x, initial_w, max_iters, gamma):
+def logistic_regression(y, x, initial_w, max_iters, gamma, threshold=1e-2):
     """
     Implementation of the Newton optimization algorithm for logistic regression
 
@@ -156,6 +159,7 @@ def logistic_regression(y, x, initial_w, max_iters, gamma):
     :param initial_w: vector of initial weights, numpy array with dimensions (D, 1)
     :param max_iters: how many iterations to run the algorithm, integer
     :param gamma: learning rate, positive float value
+    :param threshold: convergence threshold, positive float value
 
     :returns: (final weights, final loss value), tuple
     """
@@ -179,7 +183,9 @@ def logistic_regression(y, x, initial_w, max_iters, gamma):
 
         # Compute the current loss and test convergence
         loss = compute_loss_nll(y, x, w)
-        if abs(loss - prev_loss) < 1e-5:
+
+        if abs(loss - prev_loss) < threshold:
+            print(f'converged at iter : {n_iter}')
             break
         prev_loss = loss.copy()
 
@@ -189,7 +195,7 @@ def logistic_regression(y, x, initial_w, max_iters, gamma):
     return w, loss
 
 
-def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
+def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma, threshold=1e-2):
     """
     Implementation of the Newton optimization algorithm for logistic regression with L2 regularization
 
@@ -200,6 +206,7 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
     :param initial_w: vector of initial weights, numpy array with dimensions (D, 1)
     :param max_iters: how many iterations to run the algorithm, integer
     :param gamma: learning rate, positive float value
+    :param threshold: convergence threshold, positive float value
 
     :returns: (final weights, final loss value), tuple
     """
@@ -222,7 +229,8 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
 
         # Compute the current loss and test convergence
         loss = compute_loss_nll(y, x, w, lambda_)
-        if abs(loss - prev_loss) < 1e-5:
+        if abs(loss - prev_loss) < threshold:
+            print(f'converged at iter : {n_iter}')
             break
         prev_loss = loss.copy()
 
@@ -232,7 +240,7 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
     return w, loss
 
 
-def svm(y, x, lambda_, initial_w, max_iters, gamma):
+def svm(y, x, lambda_, initial_w, max_iters, gamma, threshold=1e-5):
     """
     Implementation of the linear SVM classification algorithm with L2 regularization
     The SVM is simulated through optimization of the Hinge loss function with gradient descent
@@ -244,6 +252,7 @@ def svm(y, x, lambda_, initial_w, max_iters, gamma):
     :param initial_w: vector of initial weights, numpy array with length D
     :param max_iters: how many iterations to run the algorithm, integer
     :param gamma: learning rate, positive float value
+    :param threshold: convergence threshold, positive float value
 
     :returns: (final weights, final loss value), tuple
     """
@@ -263,7 +272,8 @@ def svm(y, x, lambda_, initial_w, max_iters, gamma):
 
         # Compute the current loss and test convergence
         loss = compute_loss_hinge(y, x, w, lambda_)
-        if abs(loss - prev_loss) < 1e-5:
+        if abs(loss - prev_loss) < threshold:
+            print(f'converged at iter : {n_iter}')
             break
         prev_loss = loss
 
