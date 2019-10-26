@@ -46,7 +46,7 @@ def k_fold_indices(n, k, seed):
     k_indices = [indices[i * fold_size: (i + 1) * fold_size] for i in range(k)]
     return k_indices
 
-def k_fold_cross_split_data(y, x, k, seed):
+def k_fold_cross_split_data(y, x, k_indices):
     """
     Helper function that splits data samples randomly into k folds, to be used afterwards for cross-validation
 
