@@ -3,15 +3,25 @@
 import csv
 import numpy as np
 
+def binarize(y, target_low=-1, target_high=1, threshold=0):
+    """Binarize a (N,) array into two targets based on a threshold"""
+    y[y <= threshold] = target_low
+    y[y > threshold] = target_high
+    return y
 
 def predict_labels(weights, data):
     """Generates class predictions given weights, and a test data matrix"""
     y_pred = np.dot(data, weights)
-    y_pred[np.where(y_pred <= 0)] = -1
-    y_pred[np.where(y_pred > 0)] = 1
+    return binarize(y_pred)
 
-    return y_pred
+def predict_log_labels(weights, data):
+    """Generates class predictions for NLL based models given weights, and a test data matrix"""
+    y_pred = sigmoid(data @ weights)
+    return binarize(y_pred, target_low=0, threshold=0.5)
 
+def compute_accuracy(predict, targets):
+    """Compute the mean of the number of correct prediction"""
+    return np.mean(predict == targets)
 
 def map_target_classes_to_boolean(y):
     """
