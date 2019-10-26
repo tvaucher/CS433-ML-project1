@@ -127,7 +127,7 @@ def remove_correlated_features(x, min_abs_correlation):
 
     variances = np.nanvar(x, axis=0)
     correlation_coefficients = np.ma.corrcoef(np.ma.masked_invalid(x), rowvar=False)
-    rows, cols = np.where(abs(correlation_coefficients) > min_abs_correlation)
+    rows, cols = np.where(np.abs(correlation_coefficients) > min_abs_correlation)
     columns_to_remove = []
     for i, j in zip(rows, cols):
         if i >= j:
@@ -136,10 +136,10 @@ def remove_correlated_features(x, min_abs_correlation):
             columns_to_remove.append(i)
         elif variances[j] < variances[i] and j not in columns_to_remove:
             columns_to_remove.append(j)
-    return np.delete(x, columns_to_remove, axis=1)
+    return np.delete(x, columns_to_remove, axis=1), columns_to_remove
 
 
-def augment_features_polynomial_basis(x, degree=2):
+def augment_features_polynomial_basis(x, degree=2, cross_term=True):
     """
     Helper function that augments the data with polynomial degrees of features up to a maximum degree
     A column of ones is also added for the constant term
@@ -147,17 +147,22 @@ def augment_features_polynomial_basis(x, degree=2):
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
     :param degree: maximum polynomial degree, integer (minimum 1), optional, the default value is 2
+    :cross temr: whether to include degree 2 cross-terms (x_i*x_j pairs), optional, bool
 
     :returns: Phi matrix of augmented polynomial basis features, numpy ndarray with shape (N, 1 + D * degree)
     """
 
-    n = x.shape[0]
+    n, d = x.shape
     powers = [x ** deg for deg in range(1, degree + 1)]
     phi = np.concatenate((np.ones((n, 1)), *powers), axis=1)
+    if cross_term:
+        new_feat = np.array([x[:, i]*x[:, j] for i in range(d) for j in range(i+1, d)]).T
+        phi = np.append(phi, new_feat, axis=1)
     return phi
 
 
-def preprocessing_pipeline(data, *, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85, degree=3):
+def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85,\
+                           degree=2, cross_term=True, columns_to_remove=None):
     """
     Function that performs the whole preprocessing pipeline
 
@@ -167,15 +172,20 @@ def preprocessing_pipeline(data, *, nan_value=-999., low_var_threshold=0.1, corr
     :param low_var_threshold: variance percentile, float value between 0 and 1
     :param corr_threshold: threshold for the correlation coefficient in absolute value, float value between 0 and 1
     :param degree: maximum polynomial degree, integer (minimum 1)
+    :param cross_term: expand data with cross terms, i.e. x_i*x_j pairs, bool
+    :param columns_to_remove: columns to remove from test data set, should be None while training
 
     :returns: preprocessed data matrix
+    :returns: columns with high correlation to be removed
     """
     data = data.copy()
-    data[data == nan_value] = np.nan
+    data[data == nan_value] = 0.
     data = remove_na_columns(data)
-    data = remove_low_variance_features(data, low_var_threshold)
-    data = remove_correlated_features(data, corr_threshold)
     data = z_normalize_data(data)
-    data[np.isnan(data)] = 0.
-    data = augment_features_polynomial_basis(data, degree)
-    return data
+    #data = remove_low_variance_features(data, low_var_threshold)
+    if columns_to_remove is not None:
+        data = np.delete(data, columns_to_remove, axis=1)
+    else:
+        data, columns_to_remove = remove_correlated_features(data, corr_threshold)
+    data = augment_features_polynomial_basis(data, degree, cross_term)
+    return data, columns_to_remove
