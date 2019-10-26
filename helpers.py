@@ -205,9 +205,10 @@ def compute_hessian_nll(y, x, w, lambda_=0):
     :returns: Hessian matrix, numpy ndarray with dimensions (D, D)
     """
 
-    sgm = sigmoid(np.multiply(x, w))
+    sgm = sigmoid(x @ w)
     s = sgm * (1 - sgm) + 2 * lambda_
-    return np.matmul(np.transpose(x) * s, x)
+    return (x.T * s) @ x
+
 
 def compute_loss_hinge(y, x, w, lambda_=0):
     """
