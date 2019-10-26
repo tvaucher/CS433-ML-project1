@@ -224,7 +224,7 @@ def compute_loss_hinge(y, x, w, lambda_=0):
     :returns: Hinge loss value, float
     """
 
-    return np.maximum(1 - y * (x @ w), 0).sum() + lambda_ / 2 * w.dot(w)
+    return np.clip(1 - y * (x @ w), 0, None).sum() + (lambda_ / 2) * w.dot(w)
 
 
 def compute_gradient_hinge(y, x, w, lambda_=0):
@@ -242,6 +242,6 @@ def compute_gradient_hinge(y, x, w, lambda_=0):
     """
     mask = (y * (x @ w)) < 1
     grad = np.zeros_like(w)
-    grad -= (y[:, None] * x)[mask, :].sum(axis=0)
+    grad -= x.T @ (mask * y) # * n/x.shape[0]
     grad += lambda_ * w
     return grad
