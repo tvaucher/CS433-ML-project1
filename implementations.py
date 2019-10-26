@@ -28,6 +28,9 @@ def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
     # Set the initial values for the weights
     w = initial_w
 
+    # Compute the initial loss value
+    prev_loss = compute_loss(y, x, initial_w, mae)
+
     for n_iter in range(max_iters):
 
         # Compute the total gradient (or subgradient if MAE loss is used)
@@ -35,6 +38,12 @@ def least_squares_GD(y, x, initial_w, max_iters, gamma, mae=False):
 
         # Update the weights using the gradient and learning rate
         w = w - gamma * grd
+
+        # Compute the current loss and test convergence
+        loss = compute_loss(y, x, w, mae)
+        if abs(loss - prev_loss) < 1e-5:
+            break
+        prev_loss = loss.copy()
 
     # Compute the final loss value
     loss = compute_loss(y, x, w, mae)
@@ -61,6 +70,9 @@ def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False):
     # Set the initial values for the weights
     w = initial_w
 
+    # Compute the initial loss value
+    prev_loss = compute_loss(y, x, initial_w, mae)
+
     # Use the helper function batch_iter from Exercise 2,
     # to get a random sample from the data in the form (y_n, x_n) for each iteration
     batch_iterator = batch_iter(y, x, batch_size=1, num_batches=max_iters)
@@ -71,6 +83,12 @@ def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False):
 
         # Update the weights using the gradient and learning rate
         w = w - gamma * grd
+
+        # Compute the current loss and test convergence
+        loss = compute_loss(y, x, w, mae)
+        if abs(loss - prev_loss) < 1e-5:
+            break
+        prev_loss = loss.copy()
 
     # Compute the final loss value
     loss = compute_loss(y, x, w, mae)
@@ -148,6 +166,9 @@ def logistic_regression(y, x, initial_w, max_iters, gamma):
     # Set the initial values for the weights
     w = initial_w
 
+    # Compute the initial loss value
+    prev_loss = compute_loss_nll(y, x, initial_w)
+
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_nll(y, x, w)
@@ -155,6 +176,12 @@ def logistic_regression(y, x, initial_w, max_iters, gamma):
 
         # Update the weights using the gradient, Hessian and learning rate
         w = w - gamma * grad  # np.matmul(np.linalg.inv(hess), grd)
+
+        # Compute the current loss and test convergence
+        loss = compute_loss_nll(y, x, w)
+        if abs(loss - prev_loss) < 1e-5:
+            break
+        prev_loss = loss.copy()
 
     # Compute the final loss value
     loss = compute_loss_nll(y, x, w)
@@ -182,6 +209,9 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
     # Set the initial values for the weights
     w = initial_w
 
+    # Compute the initial loss value
+    prev_loss = compute_loss_nll(y, x, initial_w, lambda_)
+
     for n_iter in range(max_iters):
         # Compute the gradient and Hessian of the loss function
         grd = compute_gradient_nll(y, x, w, lambda_)
@@ -189,6 +219,12 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma):
 
         # Update the weights using the gradient, Hessian and learning rate
         w -= gamma * grd
+
+        # Compute the current loss and test convergence
+        loss = compute_loss_nll(y, x, w, lambda_)
+        if abs(loss - prev_loss) < 1e-5:
+            break
+        prev_loss = loss.copy()
 
     # Compute the final loss value
     loss = compute_loss_nll(y, x, w, lambda_)
