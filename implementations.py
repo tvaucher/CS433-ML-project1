@@ -231,6 +231,8 @@ def reg_logistic_regression(y, x, lambda_, initial_w, max_iters, gamma, threshol
 
         # Compute the current loss and test convergence
         loss = compute_loss_nll(y, x, w, lambda_)
+        if loss == np.inf:
+            raise ArithmeticError('Training diverges')
         if abs(loss - prev_loss) < threshold:
             print(f'converged at iter : {n_iter}')
             break
@@ -271,7 +273,7 @@ def svm(y, x, lambda_, initial_w, max_iters, gamma, threshold=1e-5):
         grd = compute_gradient_hinge(y, x, w, lambda_)
 
         # Update the weights using the gradient, Hessian and learning rate
-        w -= gamma * grd
+        w -= gamma / (1 + 1e-2*n_iter) * grd
 
         # Compute the current loss and test convergence
         loss = compute_loss_hinge(y, x, w, lambda_)
