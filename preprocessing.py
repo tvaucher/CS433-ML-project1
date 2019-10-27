@@ -35,6 +35,8 @@ def z_normalize_data(x):
     """
 
     mean_x, std_x = np.nanmean(x, axis=0), np.nanstd(x, axis=0)
+    if (np.any(std_x == 0)):
+        print(x[:, std_x == 0])
     x_norm = (x - mean_x) / std_x
     return x_norm
 
@@ -162,7 +164,7 @@ def augment_features_polynomial_basis(x, degree=2, cross_term=True):
 
 
 def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85,\
-                           degree=2, cross_term=True, columns_to_remove=None):
+                           degree=2, cross_term=True, columns_to_remove=None, norm_first=True):
     """
     Function that performs the whole preprocessing pipeline
 
@@ -174,18 +176,24 @@ def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_th
     :param degree: maximum polynomial degree, integer (minimum 1)
     :param cross_term: expand data with cross terms, i.e. x_i*x_j pairs, bool
     :param columns_to_remove: columns to remove from test data set, should be None while training
+    :param norm_first: whether to normalize before or after expanding
 
     :returns: preprocessed data matrix
     :returns: columns with high correlation to be removed
     """
     data = data.copy()
-    data[data == nan_value] = 0.
+    data[data == nan_value] = np.nan
     data = remove_na_columns(data)
-    data = z_normalize_data(data)
+    if norm_first:
+        data[np.isnan(data)] = 0.
+        data = z_normalize_data(data)
     #data = remove_low_variance_features(data, low_var_threshold)
     if columns_to_remove is not None:
         data = np.delete(data, columns_to_remove, axis=1)
     else:
         data, columns_to_remove = remove_correlated_features(data, corr_threshold)
     data = augment_features_polynomial_basis(data, degree, cross_term)
+    if not norm_first:
+        data[:, 1:] = z_normalize_data(data[:, 1:])
+        data[np.isnan(data)] = 0.
     return data, columns_to_remove
