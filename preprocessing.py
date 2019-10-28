@@ -23,22 +23,25 @@ def load_csv_data(data_path, sub_sample=False):
     return yb, input_data, ids
 
 
-def z_normalize_data(x):
+def z_normalize_data(x, mean_x=None, std_x=None):
     """
     Helper function which performs Z-normalization on the columns of the data matrix given as an argument
     Assumes all the column features follow a Gaussian distribution
 
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
+    :param mean: training mean, None while training
+    :param std: training standard deviation, None while training
 
-    :returns: numpy ndarray matrix with shape (N, D) with Z-normalized columns
+    :returns: tuple with numpy ndarray matrix with shape (N, D) with Z-normalized column, mean and std
     """
 
-    mean_x, std_x = np.nanmean(x, axis=0), np.nanstd(x, axis=0)
+    if mean_x is None or std_x is None:
+        mean_x, std_x = np.nanmean(x, axis=0), np.nanstd(x, axis=0)
     if (np.any(std_x == 0)):
         print(x[:, std_x == 0])
     x_norm = (x - mean_x) / std_x
-    return x_norm
+    return x_norm, mean_x, std_x
 
 
 def min_max_normalize_data(x, new_min=0, new_max=1):
@@ -164,7 +167,7 @@ def augment_features_polynomial_basis(x, degree=2, cross_term=True):
 
 
 def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85,\
-                           degree=2, cross_term=True, columns_to_remove=None, norm_first=True):
+                           degree=2, cross_term=True, columns_to_remove=None, norm_first=True, mean=None, std=None):
     """
     Function that performs the whole preprocessing pipeline
 
@@ -177,16 +180,19 @@ def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_th
     :param cross_term: expand data with cross terms, i.e. x_i*x_j pairs, bool
     :param columns_to_remove: columns to remove from test data set, should be None while training
     :param norm_first: whether to normalize before or after expanding
+    :param mean: training mean, None while training
+    :param std: training standard deviation, None while training
 
     :returns: preprocessed data matrix
     :returns: columns with high correlation to be removed
+    :returns: mean and standard deviation of the normalization
     """
     data = data.copy()
     data[data == nan_value] = np.nan
     data = remove_na_columns(data)
     if norm_first:
         data[np.isnan(data)] = 0.
-        data = z_normalize_data(data)
+        data, mean, std = z_normalize_data(data, mean, std)
     #data = remove_low_variance_features(data, low_var_threshold)
     if columns_to_remove is not None:
         data = np.delete(data, columns_to_remove, axis=1)
@@ -194,6 +200,6 @@ def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_th
         data, columns_to_remove = remove_correlated_features(data, corr_threshold)
     data = augment_features_polynomial_basis(data, degree, cross_term)
     if not norm_first:
-        data[:, 1:] = z_normalize_data(data[:, 1:])
+        data[:, 1:], mean, std = z_normalize_data(data[:, 1:], mean, std)
         data[np.isnan(data)] = 0.
-    return data, columns_to_remove
+    return data, columns_to_remove, mean, std
