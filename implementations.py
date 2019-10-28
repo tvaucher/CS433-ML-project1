@@ -78,8 +78,8 @@ def least_squares_SGD(y, x, initial_w, max_iters, gamma, mae=False, threshold=1e
 
     # Use the helper function batch_iter from Exercise 2,
     # to get a random sample from the data in the form (y_n, x_n) for each iteration
-    for n_iter in range(max_iters // 10):
-        for y_n, x_n in batch_iter(y, x, batch_size=100, num_batches=10):
+    for n_iter in range(max_iters):
+        for y_n, x_n in batch_iter(y, x, batch_size=1, num_batches=1):
             # Compute the gradient for only one sample (or subgradient if MAE loss is used)
             grd = compute_subgradient_mae(y_n, x_n, w) if mae else compute_gradient_mse(y_n, x_n, w)
 
