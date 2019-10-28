@@ -248,6 +248,6 @@ def compute_gradient_hinge(y, x, w, lambda_=0):
     """
     mask = (y * (x @ w)) < 1
     grad = np.zeros_like(w)
-    grad -= x.T @ (mask * y)  # * n/x.shape[0]
+    grad -= x.T @ (mask * y)
     grad += lambda_ * w
     return grad

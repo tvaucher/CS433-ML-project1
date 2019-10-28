@@ -268,7 +268,6 @@ def svm(y, x, lambda_, initial_w, max_iters, gamma, threshold=1e-5):
     prev_loss = compute_loss_hinge(y, x, w, lambda_)
     
     for n_iter in range(max_iters):
-        #for y_n, x_n in batch_iter(y, x, batch_size=100, num_batches=10):
         # Compute the gradient of the loss function
         grd = compute_gradient_hinge(y, x, w, lambda_)
 

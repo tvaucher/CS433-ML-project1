@@ -40,11 +40,12 @@ def k_fold_indices(n, k, seed):
     fold_size = n // k
     # Set the seed
     np.random.seed(seed)
-    
+
     # Shuffle and split the sample indices into k folds
     indices = np.random.permutation(n)
     k_indices = [indices[i * fold_size: (i + 1) * fold_size] for i in range(k)]
     return k_indices
+
 
 def k_fold_cross_split_data(y, x, k_indices):
     """

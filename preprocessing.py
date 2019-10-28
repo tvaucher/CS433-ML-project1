@@ -12,8 +12,8 @@ def load_csv_data(data_path, sub_sample=False):
 
     # convert class labels from strings to binary (-1,1)
     yb = np.ones(len(y))
-    yb[np.where(y=='b')] = -1
-    
+    yb[np.where(y == 'b')] = -1
+
     # sub-sample
     if sub_sample:
         yb = yb[::50]
@@ -30,15 +30,15 @@ def z_normalize_data(x, mean_x=None, std_x=None):
 
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
-    :param mean: training mean, None while training
-    :param std: training standard deviation, None while training
+    :param mean_x: training mean, None while training
+    :param std_x: training standard deviation, None while training
 
     :returns: tuple with numpy ndarray matrix with shape (N, D) with Z-normalized column, mean and std
     """
 
     if mean_x is None or std_x is None:
         mean_x, std_x = np.nanmean(x, axis=0), np.nanstd(x, axis=0)
-    if (np.any(std_x == 0)):
+    if np.any(std_x == 0):
         print(x[:, std_x == 0])
     x_norm = (x - mean_x) / std_x
     return x_norm, mean_x, std_x
@@ -152,7 +152,7 @@ def augment_features_polynomial_basis(x, degree=2, cross_term=True):
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
     :param degree: maximum polynomial degree, integer (minimum 1), optional, the default value is 2
-    :cross temr: whether to include degree 2 cross-terms (x_i*x_j pairs), optional, bool
+    :param cross_term: whether to include degree 2 cross-terms (x_i*x_j pairs), optional, bool
 
     :returns: Phi matrix of augmented polynomial basis features, numpy ndarray with shape (N, 1 + D * degree)
     """
@@ -161,12 +161,12 @@ def augment_features_polynomial_basis(x, degree=2, cross_term=True):
     powers = [x ** deg for deg in range(1, degree + 1)]
     phi = np.concatenate((np.ones((n, 1)), *powers), axis=1)
     if cross_term:
-        new_feat = np.array([x[:, i]*x[:, j] for i in range(d) for j in range(i+1, d)]).T
+        new_feat = np.array([x[:, i] * x[:, j] for i in range(d) for j in range(i + 1, d)]).T
         phi = np.append(phi, new_feat, axis=1)
     return phi
 
 
-def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85,\
+def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_threshold=0.85,
                            degree=2, cross_term=True, columns_to_remove=None, norm_first=True, mean=None, std=None):
     """
     Function that performs the whole preprocessing pipeline
@@ -193,7 +193,7 @@ def preprocessing_pipeline(data, nan_value=-999., low_var_threshold=0.1, corr_th
     if norm_first:
         data[np.isnan(data)] = 0.
         data, mean, std = z_normalize_data(data, mean, std)
-    #data = remove_low_variance_features(data, low_var_threshold)
+    # data = remove_low_variance_features(data, low_var_threshold)
     if columns_to_remove is not None:
         data = np.delete(data, columns_to_remove, axis=1)
     else:

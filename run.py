@@ -41,7 +41,6 @@ if __name__ == "__main__":
         data_split, columns_to_remove, mean, std = preprocessing_pipeline(train_data_split, degree=np.int(deg),
                                                                           cross_term=True, norm_first=False)
         initial_w = np.zeros((data_split.shape[1],))
-        print(lambda_, deg, gamma)
         w, loss = reg_logistic_regression(train_classes_split, data_split, lambda_, initial_w, 500, gamma, 1)
         print(f'Loss: {loss:.3f} Accuracy : {compute_accuracy(predict_labels(w, data_split), train_classes_split)}')
         logistic_best_models.append((w, loss, columns_to_remove, mean, std))
