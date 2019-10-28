@@ -1,4 +1,4 @@
-"""Module containing functions for splitting data for cross validation"""
+""" Module containing functions for splitting data for cross validation """
 
 import numpy as np
 

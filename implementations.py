@@ -1,4 +1,4 @@
-"""Module containing all implementations of ML techniques required for the project"""
+""" Module containing all implementations of ML techniques required for the project """
 
 import numpy as np
 

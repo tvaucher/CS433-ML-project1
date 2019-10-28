@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Module that contains various helper functions for the project"""
+""" Module that contains various helper functions for the project """
 import csv
 import numpy as np
+
 
 def binarize(y, target_low=-1, target_high=1, threshold=0):
     """Binarize a (N,) array into two targets based on a threshold"""
@@ -9,19 +10,23 @@ def binarize(y, target_low=-1, target_high=1, threshold=0):
     y[y > threshold] = target_high
     return y
 
+
 def predict_labels(weights, data):
     """Generates class predictions given weights, and a test data matrix"""
     y_pred = np.dot(data, weights)
     return binarize(y_pred)
+
 
 def predict_log_labels(weights, data):
     """Generates class predictions for NLL based models given weights, and a test data matrix"""
     y_pred = sigmoid(data @ weights)
     return binarize(y_pred, target_low=0, threshold=0.5)
 
+
 def compute_accuracy(predict, targets):
     """Compute the mean of the number of correct prediction"""
     return np.mean(predict == targets)
+
 
 def map_target_classes_to_boolean(y):
     """
@@ -47,7 +52,7 @@ def create_csv_submission(ids, y_pred, name):
         writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames)
         writer.writeheader()
         for r1, r2 in zip(ids, y_pred):
-            writer.writerow({'Id':int(r1),'Prediction':int(r2)})
+            writer.writerow({'Id': int(r1), 'Prediction': int(r2)})
 
 
 def compute_loss(y, x, w, mae=False):
@@ -159,12 +164,13 @@ def compute_loss_nll(y, x, w, lambda_=0):
 
     :returns: negative log likelihood loss value, float
     """
+
     def safe_log(x, MIN=1e-9):
         """
         Return the stable floating log (in case where x was very small)
         """
         return np.log(np.maximum(x, MIN))
-    
+
     predict = sigmoid(x @ w)
     log_pos, log_neg = safe_log(predict), safe_log(1 - predict)
     loss = -(y.T @ log_pos + (1 - y).T @ log_neg)
@@ -242,6 +248,6 @@ def compute_gradient_hinge(y, x, w, lambda_=0):
     """
     mask = (y * (x @ w)) < 1
     grad = np.zeros_like(w)
-    grad -= x.T @ (mask * y) # * n/x.shape[0]
+    grad -= x.T @ (mask * y)  # * n/x.shape[0]
     grad += lambda_ * w
     return grad

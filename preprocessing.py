@@ -1,4 +1,4 @@
-"""Module containing functions for preprocessing the data"""
+""" Module containing functions for preprocessing the data """
 
 import numpy as np
 
