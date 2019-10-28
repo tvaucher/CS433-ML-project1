@@ -1,36 +1,43 @@
 # -*- coding: utf-8 -*-
-"""some helper functions for project 1."""
+""" Module that contains various helper functions for the project """
 import csv
 import numpy as np
 
 
-def load_csv_data(data_path, sub_sample=False):
-    """Loads data and returns y (class labels), tX (features) and ids (event ids)"""
-    y = np.genfromtxt(data_path, delimiter=",", skip_header=1, dtype=str, usecols=1)
-    x = np.genfromtxt(data_path, delimiter=",", skip_header=1)
-    ids = x[:, 0].astype(np.int)
-    input_data = x[:, 2:]
-
-    # convert class labels from strings to binary (-1,1)
-    yb = np.ones(len(y))
-    yb[np.where(y=='b')] = -1
-    
-    # sub-sample
-    if sub_sample:
-        yb = yb[::50]
-        input_data = input_data[::50]
-        ids = ids[::50]
-
-    return yb, input_data, ids
+def binarize(y, target_low=-1, target_high=1, threshold=0):
+    """Binarize a (N,) array into two targets based on a threshold"""
+    y[y <= threshold] = target_low
+    y[y > threshold] = target_high
+    return y
 
 
 def predict_labels(weights, data):
     """Generates class predictions given weights, and a test data matrix"""
     y_pred = np.dot(data, weights)
-    y_pred[np.where(y_pred <= 0)] = -1
-    y_pred[np.where(y_pred > 0)] = 1
-    
-    return y_pred
+    return binarize(y_pred)
+
+
+def predict_log_labels(weights, data):
+    """Generates class predictions for NLL based models given weights, and a test data matrix"""
+    y_pred = sigmoid(data @ weights)
+    return binarize(y_pred, target_low=0, threshold=0.5)
+
+
+def compute_accuracy(predict, targets):
+    """Compute the mean of the number of correct prediction"""
+    return np.mean(predict == targets)
+
+
+def map_target_classes_to_boolean(y):
+    """
+    Helper function that transforms the target classes {-1, 1} into the standard boolean {0, 1}
+
+    :param y: vector of target classes, numpy array with dimensions (N, 1)
+
+    :returns: vector of boolean classes, numpy array with dimensions (N, 1)
+    """
+
+    return (y == 1).astype(int)
 
 
 def create_csv_submission(ids, y_pred, name):
@@ -45,140 +52,7 @@ def create_csv_submission(ids, y_pred, name):
         writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames)
         writer.writeheader()
         for r1, r2 in zip(ids, y_pred):
-            writer.writerow({'Id':int(r1),'Prediction':int(r2)})
-
-
-def z_normalize_data(x):
-    """
-    Helper function which performs Z-normalization on the columns of the data matrix given as an argument
-    Assumes all the column features follow a Gaussian distribution
-
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-
-    :returns: numpy ndarray matrix with shape (N, D) with Z-normalized columns
-    """
-
-    mean_x, std_x = np.nanmean(x, axis=0), np.nanstd(x, axis=0)
-    x_norm = (x - mean_x) / std_x
-    return x_norm
-
-
-def min_max_normalize_data(x, new_min=0, new_max=1):
-    """
-    Helper function which performs min-max-normalization on the columns of the data matrix given as an argument.
-
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-    :param new_min: lower boundary of the new interval, float, optional, the default value is 0
-    :param new_max: upper boundary of the new interval, float, optional, the default value is 1
-
-    :returns: numpy ndarray matrix with shape (N, D) with min-max-normalized columns
-    """
-
-    # Calculate minimum and maximum value for each column/feature
-    min_x, max_x = np.nanmin(x, axis=0), np.nanmax(x, axis=0)
-
-    # Apply a transformation, such that the values in every column with be in the interval [new_min, new_max]
-    x_norm = new_min + ((new_max - new_min) * (x - min_x) / (max_x - min_x))
-
-    return x_norm
-
-
-def split_data_by_categorical_column(y, x, ids, column_index):
-    """
-    Helper function to split the data into multiple smaller datasets based on the value of one categorical column
-
-    :param y: vector of target classes, numpy array with dimensions (N, 1)
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-    :param ids: vector of ids for the samples, numpy array with dimensions (N, 1)
-    :param column_index: index of the categorical column, integer value from 0 to D - 1
-
-    :returns: (y_splits, x_splits, ids_splits), tuple of lists of reduced sets of target classes, data and ids,
-                                                one set of classes, data and ids for each category
-    """
-
-    categories = np.sort(np.unique(x[:, column_index]))
-    category_indices = [np.where(x[:, column_index] == category)[0] for category in categories]
-    x_splits = [np.delete(x[indices, :], column_index, axis=1) for indices in category_indices]
-    y_splits = [y[indices] for indices in category_indices]
-    ids_splits = [ids[indices] for indices in category_indices]
-    return y_splits, x_splits, ids_splits
-
-
-def remove_na_columns(x):
-    """
-    Helper function that removes columns in the data which contain only NaN values
-
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-
-    :returns: cleaned data matrix
-    """
-
-    na_mask = np.isnan(x)
-    na_columns = np.all(na_mask, axis=0)
-    return x[:, ~na_columns]
-
-
-def remove_low_variance_features(x, percentile):
-    """
-    Helper function that removes features in the data which have the lowest variance (below a percentile value)
-
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-    :param percentile: variance percentile, float value between 0 and 1
-
-    :returns: cleaned data matrix
-    """
-    variances = np.nanvar(x, axis=0)
-    variance_percentile = np.percentile(variances, percentile * 100)
-    low_variance_mask = variances <= variance_percentile
-    return x[:, ~low_variance_mask]
-
-
-def remove_correlated_features(x, min_abs_correlation):
-    """
-    Helper function that removes linearly correlated features in the data using Pearson's correlation coefficients
-
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-    :param min_abs_correlation: threshold for the correlation coefficient in absolute value, float value between 0 and 1
-
-    :returns: cleaned data matrix
-    """
-
-    variances = np.nanvar(x, axis=0)
-    correlation_coefficients = np.ma.corrcoef(np.ma.masked_invalid(x), rowvar=False)
-    rows, cols = np.where(abs(correlation_coefficients) > min_abs_correlation)
-    columns_to_remove = []
-    for i, j in zip(rows, cols):
-        if i >= j:
-            continue
-        if variances[i] < variances[j] and i not in columns_to_remove:
-            columns_to_remove.append(i)
-        elif variances[j] <= variances[i] and j not in columns_to_remove:
-            columns_to_remove.append(j)
-    return np.delete(x, columns_to_remove, axis=1)
-
-
-def augment_features_polynomial_basis(x, degree=2):
-    """
-    Helper function that augments the data with polynomial degrees of features up to a maximum degree
-    A column of ones is also added for the constant term
-
-    :param x: data matrix, numpy ndarray with shape with shape (N, D),
-              where N is the number of samples and D is the number of features
-    :param degree: maximum polynomial degree, integer (minimum 1), optional, the default value is 2
-
-    :returns: Phi matrix of augmented polynomial basis features, numpy ndarray with shape (N, 1 + D * degree)
-    """
-
-    n = x.shape[0]
-    powers = [x ** deg for deg in range(1, degree + 1)]
-    phi = np.concatenate((np.ones((n, 1)), *powers), axis=1)
-    return phi
+            writer.writerow({'Id': int(r1), 'Prediction': int(r2)})
 
 
 def compute_loss(y, x, w, mae=False):
@@ -194,12 +68,11 @@ def compute_loss(y, x, w, mae=False):
     :returns: loss value, float
     """
 
-    n = x.shape[0]
-    e = y - np.matmul(x, w)
+    e = y - x @ w
     if mae:
-        loss = np.sum(abs(e)) / n
+        loss = np.mean(np.abs(e))
     else:
-        loss = np.sum(e ** 2) / (2 * n)
+        loss = np.mean(e ** 2) / 2
     return loss
 
 
@@ -216,8 +89,8 @@ def compute_gradient_mse(y, x, w):
     """
 
     n = x.shape[0]
-    e = y - np.matmul(x, w)
-    grd = (-1 / n) * np.matmul(np.transpose(x), e)
+    e = y - x @ w
+    grd = -(x.T @ e) / n
     return grd
 
 
@@ -235,8 +108,8 @@ def compute_subgradient_mae(y, x, w):
     """
 
     n = x.shape[0]
-    e = y - np.matmul(x, w)
-    grd = (-1 / n) * np.matmul(np.transpose(x), np.sign(e))
+    e = y - x @ w
+    grd = -(x.T @ np.sign(e)) / n
     return grd
 
 
@@ -275,19 +148,7 @@ def sigmoid(x):
     :returns: sigmoid value(s), single float or one-dimensional numpy array
     """
 
-    return 1 / (1 + np.exp(-x))
-
-
-def map_target_classes_to_boolean(y):
-    """
-    Helper function that transforms the target classes {-1, 1} into the standard boolean {0, 1}
-
-    :param y: vector of target classes, numpy array with dimensions (N, 1)
-
-    :returns: vector of boolean classes, numpy array with dimensions (N, 1)
-    """
-
-    return (y == 1).astype(int)
+    return 1.0 / (1 + np.exp(-x))
 
 
 def compute_loss_nll(y, x, w, lambda_=0):
@@ -304,10 +165,16 @@ def compute_loss_nll(y, x, w, lambda_=0):
     :returns: negative log likelihood loss value, float
     """
 
-    sgm = sigmoid(np.matmul(x, w))
-    log_pos, log_neg = np.log(sgm), np.log(1 - sgm)
-    loss = - np.matmul(np.transpose(y), log_pos) - np.matmul(np.transpose(1 - y), log_neg)
-    loss += lambda_ * np.matmul(np.transpose(w), w)
+    def safe_log(x, MIN=1e-9):
+        """
+        Return the stable floating log (in case where x was very small)
+        """
+        return np.log(np.maximum(x, MIN))
+
+    predict = sigmoid(x @ w)
+    log_pos, log_neg = safe_log(predict), safe_log(1 - predict)
+    loss = -(y.T @ log_pos + (1 - y).T @ log_neg)
+    loss += lambda_ * w.dot(w).squeeze()
     return loss
 
 
@@ -324,9 +191,8 @@ def compute_gradient_nll(y, x, w, lambda_=0):
 
     :returns: vector of gradients of the weights, numpy array with dimensions (D, 1)
     """
-
-    e = y - sigmoid(np.matmul(x, w))
-    grd = - np.matmul(np.transpose(x), e)
+    predict = sigmoid(x @ w)
+    grd = x.T @ (predict - y)
     grd += 2 * lambda_ * w
     return grd
 
@@ -345,75 +211,43 @@ def compute_hessian_nll(y, x, w, lambda_=0):
     :returns: Hessian matrix, numpy ndarray with dimensions (D, D)
     """
 
-    sgm = sigmoid(np.multiply(x, w))
+    sgm = sigmoid(x @ w)
     s = sgm * (1 - sgm) + 2 * lambda_
-    return np.matmul(np.transpose(x) * s, x)
+    return (x.T * s) @ x
 
 
-def train_test_split_data(y, x, ratio, seed):
+def compute_loss_hinge(y, x, w, lambda_=0):
     """
-    Helper function that splits data samples randomly into train and test sets by a given ratio
+    Helper function that calculates the Hinge loss for linear SVM classification
+    Can also optionally include regularization
 
-    :param y: vector of target values, numpy array with dimensions (N, 1)
+    :param y: vector of target classes, numpy array with length N
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
-    :param ratio: fraction of data samples that will be selected for trainings, float value between 0 and 1
-    :param seed: seeding value for the random generator, integer
+    :param w: vector of weights, numpy array with length D
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
 
-    :returns: tuple (x_train, y_train, x_test, y_test),
-              contains samples and targets in train set, followed by samples and targets in test set
+    :returns: Hinge loss value, float
     """
 
-    # Set the seed
-    np.random.seed(seed)
-
-    # Use the ratio to find the number of samples in the train set as an integer by rounding if necessary
-    n = x.shape[0]
-    num_train_samples = int(ratio * n)
-
-    # Shuffle and split the sample indices into train and test parts
-    indices = np.random.permutation(n)
-    train_indices = indices[:num_train_samples]
-    test_indices = indices[num_train_samples:]
-
-    # Generate the output sets
-    x_train, y_train = x[train_indices], y[train_indices]
-    x_test, y_test = x[test_indices], y[test_indices]
-    return x_train, y_train, x_test, y_test
+    return np.clip(1 - y * (x @ w), 0, None).sum() + (lambda_ / 2) * w.dot(w)
 
 
-def k_fold_cross_split_data(y, x, k, seed):
+def compute_gradient_hinge(y, x, w, lambda_=0):
     """
-    Helper function that splits data samples randomly into k folds, to be used afterwards for cross-validation
+    Helper function that calculates the gradient of the Hinge loss function for linear SVM classification
+    Can also optionally include regularization
 
-    :param y: vector of target values, numpy array with dimensions (N, 1)
+    :param y: vector of target classes, numpy array with length N
     :param x: data matrix, numpy ndarray with shape with shape (N, D),
               where N is the number of samples and D is the number of features
-    :param k: number of folds, positive integer
-    :param seed: seeding value for the random generator, integer
+    :param w: vector of weights, numpy array with length D
+    :param lambda_: regularization coefficient, positive float value, optional, the default value is 0
 
-    :returns: splits, list of tuples of the form (x_train, y_train, x_test, y_test),
-              where each tuple contains samples and targets in train set, followed by samples and targets in test set
+    :returns: vector of gradients of the weights, numpy array with length D
     """
-
-    # Set the seed
-    np.random.seed(seed)
-
-    # Calculate the number of samples in each fold as an integer by rounding if necessary
-    n = x.shape[0]
-    fold_size = int(n / k)
-
-    # Shuffle and split the sample indices into k folds
-    indices = np.random.permutation(n)
-    k_indices = [indices[i * fold_size: (i + 1) * fold_size] for i in range(k)]
-
-    # Generate the k different train-test splits of the data using the indices
-    # in each of the k folds as test indices and the rest as train indices
-    splits = []
-    for i, k_index in enumerate(k_indices):
-        y_test, x_test = y[k_index], x[k_index]
-        k_indices_without_test = k_indices[:i] + k_indices[i + 1:]
-        train_indices = [index for k_index in k_indices_without_test for index in k_index]
-        y_train, x_train = y[train_indices], x[train_indices]
-        splits.append((x_train, y_train, x_test, y_test))
-    return splits
+    mask = (y * (x @ w)) < 1
+    grad = np.zeros_like(w)
+    grad -= x.T @ (mask * y)
+    grad += lambda_ * w
+    return grad
